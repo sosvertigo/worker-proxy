@@ -19,21 +19,36 @@ export interface Env {
 	// MY_BUCKET: R2Bucket;
 }
 
-const test = async (url:string, method:string) => {
+const test = async (label:string, url:string, method:string) => {
+	let result = ''
+	let line = ''
   try {
-		console.log('TEST', method, url)
+		line = `${label} ${method} ${url}`
+		console.log(line)
+		result += `${line}\n`
     const rsp = await fetch(url, {
 			method: method,
 		})
-    for (const header of rsp.headers) {
-			console.log('TEST', header[0], ':', header[1])
+
+		line = `status ${rsp.status} `
+		console.log(line)
+		result += `${line}\n`
+
+		for (const header of rsp.headers) {
+			line = `  ${header[0]}: ${header[1]}`
+			console.log(line)
+			result += `${line}\n`
     }
-		console.log('TEST', 'status', rsp.status)
+
     const text = await rsp.text()
-    console.log('TEST',text.length, 'body bytes')
+		line = `${text.length} body bytes`
+		console.log(line)
+		result += `${line}\n`
   } catch(err) {
-    console.log(err)
+		console.error(err)
+		result = `${err}`
   }
+	return result
 }
 
 
@@ -44,24 +59,30 @@ export default {
 		ctx: ExecutionContext
 	): Promise<Response> {
 		
-		// Expect x-twintag-<something> headers
+		// Expect x-twintag-<something> headers to forward
 		const url = request.headers.get('x-twintag-url')
+		const method = request.headers.get('x-twintag-method')
+
+		if ((url === null) || (method === null)) { // direct test?
+			if (request.url.endsWith('/test')) {
+				const result = await test('DIRECT','https://twintag.io', 'GET')
+				return new Response(result, {status: 200})
+			} else {
+				console.log('UNKNOWN DIRECT PATH', request.url)
+				return new Response(`${request.url}`, {status: 502})
+			}
+		}
+
 		if (!url) {
 			return new Response('missing x-twintag-url header', {status: 502})
 		}
-		const method = request.headers.get('x-twintag-method')
 		if (!method) {
 			return new Response('missing x-twintag-method header', {status: 502})
 		}
 
-		await test(url, method)
+		await test('INDIRECT',url, method)
 
 		console.log('PROXY', method, url)
-
-		for (const header of request.headers) {
-			console.log('PROXY','  ', header[0], header[1])
-    }
-
 		// copy all headers except x-twintag-<something>
 		const headers = new Headers()
 		for (const header of request.headers) {
@@ -69,8 +90,9 @@ export default {
 				continue
 			}
       headers.set(header[0], header[1])
+			console.log('  ', header[0], header[1])
     }
-		
+
 		const rsp = await fetch(url, {
 			method: method,
 			headers: headers,
@@ -78,7 +100,7 @@ export default {
 
 		console.log('PROXY', 'status', rsp.status)
 		for (const header of rsp.headers) {
-			console.log('PROXY', '  ', header[0], header[1])
+			console.log('  ', header[0], header[1])
     }
 
 		return rsp
