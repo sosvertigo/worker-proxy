@@ -59,6 +59,11 @@ export default {
 		ctx: ExecutionContext
 	): Promise<Response> {
 		
+		console.log('SERVE', request.method, request.url)
+		for (const header of request.headers) {
+			console.log('  ', header[0], header[1])
+    }
+
 		// Expect x-twintag-<something> headers to forward
 		const url = request.headers.get('x-twintag-url')
 		const method = request.headers.get('x-twintag-method')
@@ -80,29 +85,31 @@ export default {
 			return new Response('missing x-twintag-method header', {status: 502})
 		}
 
-		await test('INDIRECT',url, method)
 
-		console.log('PROXY', method, url)
-		// copy all headers except x-twintag-<something>
-		const headers = new Headers()
-		for (const header of request.headers) {
-			if (header[0].startsWith('x-twintag-')) {
-				continue
-			}
-      headers.set(header[0], header[1])
-			console.log('  ', header[0], header[1])
-    }
+		const result = await test('INDIRECT',url, method)
+		return new Response(result, {status: 200})
 
-		const rsp = await fetch(url, {
-			method: method,
-			headers: headers,
-		})
+		// console.log('PROXY', method, url)
+		// // copy all headers except x-twintag-<something>
+		// const headers = new Headers()
+		// for (const header of request.headers) {
+		// 	if (header[0].startsWith('x-twintag-')) {
+		// 		continue
+		// 	}
+    //   headers.set(header[0], header[1])
+		// 	console.log('  ', header[0], header[1])
+    // }
 
-		console.log('PROXY', 'status', rsp.status)
-		for (const header of rsp.headers) {
-			console.log('  ', header[0], header[1])
-    }
+		// const rsp = await fetch(url, {
+		// 	method: method,
+		// 	headers: headers,
+		// })
 
-		return rsp
+		// console.log('PROXY', 'status', rsp.status)
+		// for (const header of rsp.headers) {
+		// 	console.log('  ', header[0], header[1])
+    // }
+
+		// return rsp
 	},
 };
