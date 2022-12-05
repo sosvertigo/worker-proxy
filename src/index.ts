@@ -13,7 +13,9 @@ const logHeaders = (headers:Headers, text:string) => {
 
 const test = async (url:string, method:string) => {
   try {
+		const u = new URL(url)
 		const headers = new Headers()
+		headers.set('host', u.host)
 		headers.set('x-twintag-cloudflare-trace', `${Math.floor(Date.now())}`)
 	
 		// log request
@@ -54,7 +56,7 @@ export default {
 		result += await test('https://twintag.io', 'GET')
 		result += await test('https://twintag.io/ABCD', 'GET')
 		result += await test('https://twintag.io/ABCD', 'POST')
-		result += await test('https://sosvertigo-dev.twintag.io', 'GET')
+		result += await test('https://sosvertigo-dev.twintag.io/', 'GET')
 		result += await test('https://admin.twintag.io', 'GET')
 
 		return new Response(`${text}\n${result}`, {status: 200})
