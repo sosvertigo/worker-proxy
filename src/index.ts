@@ -9,26 +9,35 @@ const log = (line:string, text:string) => {
 	return `${text}\n${line}`
 }
 
-const test = async (label:string, url:string, method:string, headers = new Headers()) => {
+const logHeaders = (headers:Headers, text:string) => {
+	let lines = ''
+	for (const header of headers) {
+		lines = log(`   ${header[0]}: ${header[1]}`, lines)
+	}
+	return `${text}\n${lines}`
+}
+
+const test = async (url:string, method:string) => {
   try {
-		let text = log(`${label}`, '')
-
+		const headers = new Headers()
 		headers.set('x-twintag-cloudflare-trace', `${Math.floor(Date.now())}`)
-		text = log(` ${method} ${url}`, text)
-		for (const header of headers) {
-			text = log(`   ${header[0]}: ${header[1]}`, text)
-    }
+	
+		// log request
+		let text = log('FETCHING', '')
+		text = log(`${method} ${url}`, '')
+		text = logHeaders(headers, text)
 
+		// execute fetch
     const rsp = await fetch(url, {
 			method: method,
 			headers: headers,
 		})
 
+		// log response
 		text = log(` status ${rsp.status} `, text)
-		for (const header of rsp.headers) {
-			text = log(`   ${header[0]}: ${header[1]}`, text)
-    }
-
+		text = logHeaders(rsp.headers, text)
+	
+		// log body length
     const body = await rsp.text()
 		text = log(` ${body.length} body bytes`, text)
 
@@ -49,21 +58,10 @@ export default {
 
 		text = log('SERVING from Cloudflare worker:', text)
 		text = log(`${request.method} ${request.url}`, text)
-		for (const header of request.headers) {
-			text = log(` ${header[0]}: ${header[1]}`, text)
-    }
+		text = logHeaders(request.headers, text)
 
-		const url = request.headers.get('x-twintag-url')
-		const method = request.headers.get('x-twintag-method')
+		const result = await test('https://twintag.io/ABCD', 'POST')
 
-		if (!url) {
-			return new Response('missing x-twintag-url header', {status: 502})
-		}
-		if (!method) {
-			return new Response('missing x-twintag-method header', {status: 502})
-		}
-
-		const result = await test('INDIRECTLY fetching:',url, method)
 		return new Response(`${text}\n${result}`, {status: 200})
 	},
 };
