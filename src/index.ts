@@ -1,9 +1,3 @@
-/**
- * Cloudflare Worker code
- */
-
-export interface Env {}
-
 const log = (line:string, text:string) => {
 	console.log(line)
 	return `${text}\n${line}`
@@ -49,11 +43,7 @@ const test = async (url:string, method:string) => {
 }
 
 export default {
-	async fetch(
-		request: Request,
-		env: Env,
-		ctx: ExecutionContext
-	): Promise<Response> {
+	async fetch(request: Request): Promise<Response> {
 		let text = ''
 
 		text = log('SERVING from Cloudflare worker:', text)
