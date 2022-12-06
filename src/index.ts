@@ -53,11 +53,13 @@ export default {
 		text = logHeaders(request.headers, text)
 
 		let result = ''
-		result += await test('https://twintag.io', 'GET')
-		result += await test('https://twintag.io/ABCD', 'GET')
-		result += await test('https://twintag.io/ABCD', 'POST')
-		result += await test('https://sosvertigo-dev.twintag.io/', 'GET')
-		result += await test('https://admin.twintag.io', 'GET')
+		// result += await test('https://twintag.io', 'GET')
+		// result += await test('https://twintag.io/ABCD', 'GET')
+		// result += await test('https://twintag.io/ABCD', 'POST')
+		// result += await test('https://sosvertigo-dev.twintag.io/', 'GET')
+		// result += await test('https://admin.twintag.io', 'GET')
+
+		result += await test('https://7588-87-67-226-224.eu.ngrok.io/', 'POST')
 
 		return new Response(`${text}\n${result}`, {status: 200})
 	},
